@@ -1,0 +1,15 @@
+{
+  "manifest_version": 3,
+  "name": "X Video Dock",
+  "version": "0.1.0",
+  "description": "Play x.com videos large in a dock on the right, without fullscreen.",
+  "icons": { "16": "icon.png", "48": "icon.png", "128": "icon.png" },
+  "content_scripts": [
+    {
+      "matches": ["https://x.com/*", "https://twitter.com/*"],
+      "js": ["layout.js", "content.js"],
+      "css": ["styles.css"],
+      "run_at": "document_idle"
+    }
+  ]
+}
