@@ -5,7 +5,7 @@
  *
  * Where it fits: content script for x.com / twitter.com (see manifest.json).
  * Depends on: layout.js (dockRect, fitContain, fmtTime, NAV_W), dock-ui.js (buildDock),
- * styles.css. block-autoplay.js runs in the page world next to it.
+ * styles.css.
  * Related: X's own selectors below (data-testid values) are the fragile part.
  *
  * Non-obvious constraints (verified on x.com 2026-10-17):
@@ -18,8 +18,10 @@
  *   its video dies. The dock closes when that happens (the timer in open()).
  * - The dock width is resizable (drag its left edge). The width is kept in x.com's
  *   localStorage under "xvd-width" and survives page loads.
- * - Autoplay is switched off for every video except the docked one: block-autoplay.js
- *   (page world) blocks play() unless this script has set data-xvd-ok on the video.
+ * - Tried and removed: blocking X's autoplay by replacing HTMLMediaElement.play in the page
+ *   world. Resolving the call left every feed video on X's loading spinner, and pausing
+ *   from a play listener made X retry about 1,600 times in 8 s. Do not retry without a
+ *   better idea.
  * - Closing: Esc, the Close button, or a click anywhere outside the dock. A scrim over the
  *   timeline takes those clicks, so they never reach X's posts underneath.
  * - A captured stream cannot seek or change speed by itself, so the seek bar and the speed
@@ -121,7 +123,6 @@
 
     dock = { ui, scrim, src, player, userW: savedWidth(), wasMuted: src.muted, userPaused: false, speed: 0, timer: 0 };
     ui.video.srcObject = src.captureStream();
-    src.setAttribute("data-xvd-ok", ""); // lets block-autoplay.js pass this video's play() calls
     document.documentElement.classList.add("xvd-open"); // moves the timeline aside, see styles.css
     if (player) player.classList.add("xvd-src"); // hides the original
     src.muted = true;
@@ -195,7 +196,6 @@
     dock.src.removeEventListener("loadedmetadata", place);
     dock.src.pause();
     dock.src.playbackRate = 1;
-    dock.src.removeAttribute("data-xvd-ok"); // X's autoplay is blocked for it again
     dock.src.muted = dock.wasMuted;
     if (dock.player) dock.player.classList.remove("xvd-src");
     dock.ui.video.srcObject = null;
