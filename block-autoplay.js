@@ -14,7 +14,11 @@
   const play = HTMLMediaElement.prototype.play;
   HTMLMediaElement.prototype.play = function () {
     const allowed = this.hasAttribute("data-xvd-ok") || this.classList.contains("xvd-video");
-    if (this instanceof HTMLVideoElement && !allowed) return Promise.resolve(); // callers await it
+    // Reject, like a browser's own autoplay block. Resolving without playing left every feed
+    // video on X's loading spinner (verified 2026-10-17); a rejection makes X show a play button.
+    if (this instanceof HTMLVideoElement && !allowed) {
+      return Promise.reject(new DOMException("play() blocked by X Video Dock", "NotAllowedError"));
+    }
     return play.apply(this, arguments);
   };
 })();
