@@ -1,18 +1,53 @@
-/* styles.css: look of the dock, and the hidden state of the original video. Used by content.js. */
+/*
+ * styles.css: the dock's look, the hidden state of the original video, and the layout shift
+ * of X's own page while the dock is open. Used by content.js; the markup comes from dock-ui.js.
+ * Sizes that content.js also needs (HEAD_H 56, BAR_H 52, PAD 12) are repeated there: keep in sync.
+ */
 .xvd-src { visibility: hidden !important; } /* keeps its size, so the feed does not jump */
 [data-testid="videoPlayer"] { cursor: pointer; }
+
+/* ---- dock ---- */
 .xvd-dock {
-  position: fixed; z-index: 2000; display: flex; flex-direction: column; align-items: center;
-  background: #08090a; border-left: 1px solid #2f3336; color: #e7e9ea; font: 14px system-ui, sans-serif;
+  position: fixed; z-index: 2000; display: flex; flex-direction: column;
+  background: #000; border-left: 1px solid #2f3336; color: #e7e9ea;
+  font: 15px/1.4 -apple-system, "Segoe UI", Helvetica, Arial, sans-serif;
 }
 .xvd-scrim { position: fixed; top: 0; bottom: 0; z-index: 1999; background: rgba(0, 0, 0, .3); cursor: pointer; }
 .xvd-grip { position: absolute; left: -4px; top: 0; bottom: 0; width: 9px; cursor: ew-resize; z-index: 1; touch-action: none; }
-.xvd-grip:hover, .xvd-grip:active { background: #1d9bf0; opacity: .5; }
-.xvd-top { width: 100%; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }
-.xvd-video { background: #000; border-radius: 12px; cursor: pointer; }
-.xvd-ctl { width: calc(100% - 24px); height: 64px; display: flex; align-items: center; gap: 14px; }
-.xvd-ctl button, .xvd-x { border: 1px solid #536471; border-radius: 16px; background: none; color: #e7e9ea; padding: 6px 14px; font: 600 13px system-ui, sans-serif; cursor: pointer; }
-.xvd-seek { flex: 1; min-width: 0; accent-color: #1d9bf0; }
+.xvd-grip:hover, .xvd-grip:active { background: rgba(29, 155, 240, .5); }
+
+.xvd-head { flex: none; height: 56px; display: flex; align-items: center; gap: 12px; padding: 0 10px 0 20px; border-bottom: 1px solid #2f3336; }
+.xvd-avatar { width: 36px; height: 36px; border-radius: 50%; flex: none; object-fit: cover; background: #16181c; }
+.xvd-who { flex: 1; min-width: 0; display: flex; flex-direction: column; line-height: 1.2; }
+.xvd-name { font-weight: 700; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+.xvd-handle { color: #71767b; font-size: 13px; white-space: nowrap; overflow: hidden; text-overflow: ellipsis; }
+
+.xvd-btn {
+  flex: none; width: 36px; height: 36px; padding: 0; border: 0; border-radius: 50%;
+  display: inline-flex; align-items: center; justify-content: center;
+  background: transparent; color: #e7e9ea; cursor: pointer; text-decoration: none;
+}
+.xvd-btn:hover { background: rgba(231, 233, 234, .1); }
+.xvd-btn:focus-visible, .xvd-speed:focus-visible { outline: 2px solid #1d9bf0; outline-offset: 2px; }
+.xvd-btn svg { width: 20px; height: 20px; }
+
+.xvd-stage { flex: 1; min-height: 0; display: flex; justify-content: center; padding: 12px 20px; overflow: hidden; }
+.xvd-col { display: flex; flex-direction: column; gap: 12px; min-width: 0; }
+.xvd-video { display: block; margin: 0 auto; background: #0b0c0d; border-radius: 16px; cursor: pointer; }
+
+.xvd-bar { flex: none; height: 52px; display: flex; align-items: center; gap: 8px; padding: 0 8px 0 6px; border-radius: 26px; background: #16181c; }
+.xvd-time { flex: none; font: 13px ui-monospace, Menlo, monospace; color: #a7adb2; white-space: nowrap; }
+.xvd-speed { flex: none; min-width: 46px; height: 30px; padding: 0 10px; border: 0; border-radius: 15px; background: rgba(231, 233, 234, .1); color: #e7e9ea; font: 700 13px/1 -apple-system, "Segoe UI", sans-serif; cursor: pointer; }
+.xvd-speed:hover { background: rgba(231, 233, 234, .18); }
+
+.xvd-seek { flex: 1; min-width: 40px; height: 20px; margin: 0 6px; background: transparent; -webkit-appearance: none; appearance: none; cursor: pointer; }
+.xvd-seek::-webkit-slider-runnable-track { height: 4px; border-radius: 2px; background: linear-gradient(to right, #e7e9ea var(--p, 0%), #3e4144 var(--p, 0%)); }
+.xvd-seek::-webkit-slider-thumb { -webkit-appearance: none; width: 12px; height: 12px; margin-top: -4px; border-radius: 50%; background: #fff; border: 0; }
+.xvd-seek:focus-visible { outline: 2px solid #1d9bf0; outline-offset: 4px; }
+
+/* The text fades out at the bottom, so a line is never cut in half when space runs out. */
+.xvd-info { flex: 1 1 0; min-height: 0; overflow: hidden; padding: 4px 8px; -webkit-mask-image: linear-gradient(#000 calc(100% - 32px), transparent); mask-image: linear-gradient(#000 calc(100% - 32px), transparent); }
+.xvd-text { margin: 0; font-size: 15px; white-space: pre-wrap; overflow-wrap: anywhere; display: -webkit-box; -webkit-line-clamp: 8; -webkit-box-orient: vertical; overflow: hidden; }
 
 /*
  * Layout shift while the dock is open (class set on <html> by content.js).
@@ -38,4 +73,3 @@ html.xvd-open main[role="main"] { flex-grow: 0 !important; width: auto !importan
 html.xvd-open main[role="main"] > div,
 html.xvd-open main[role="main"] > div > div,
 html.xvd-open main[role="main"] > div > div > div { width: auto !important; flex-grow: 0 !important; }
-.xvd-time { font: 13px ui-monospace, Menlo, monospace; color: #8b98a5; min-width: 88px; text-align: right; }

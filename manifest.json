@@ -13,7 +13,7 @@
     },
     {
       "matches": ["https://x.com/*", "https://twitter.com/*"],
-      "js": ["layout.js", "content.js"],
+      "js": ["layout.js", "dock-ui.js", "content.js"],
       "css": ["styles.css"],
       "run_at": "document_idle"
     }
