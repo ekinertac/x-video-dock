@@ -1,7 +1,18 @@
 /* Tests for layout.js. Run: node --test */
 const test = require("node:test");
 const assert = require("node:assert");
-const { dockRect, fitContain, fmtTime } = require("../layout.js");
+const { dockRect, clampDockWidth, fitContain, fmtTime } = require("../layout.js");
+
+test("dockRect uses the user width, anchored to the right edge", () => {
+  assert.deepStrictEqual(dockRect(1293, 1930, 1370, 900), { left: 1030, top: 0, width: 900, height: 1370 });
+});
+
+test("clampDockWidth keeps the dock between 320 px and window minus 300 px", () => {
+  assert.strictEqual(clampDockWidth(100, 1930), 320);
+  assert.strictEqual(clampDockWidth(1900, 1930), 1630);
+  assert.strictEqual(clampDockWidth(800.4, 1930), 800);
+  assert.strictEqual(clampDockWidth(500, 500), 320);
+});
 
 test("dockRect spans from the column edge to the window edge", () => {
   assert.deepStrictEqual(dockRect(1293, 1930, 1370), { left: 1293, top: 0, width: 637, height: 1370 });

@@ -15,6 +15,8 @@
  *   feed does not jump, and X still sees it on screen and does not pause it.
  * - X virtualises the timeline: a post far off screen is removed from the DOM and
  *   its video dies. The dock closes when that happens (the timer in open()).
+ * - The dock width is resizable (drag its left edge). The width is kept in x.com's
+ *   localStorage under "xvd-width" and survives page loads.
  * - A captured stream cannot seek by itself, so the seek bar drives the original.
  * - The only control X draws on a feed video is the mute button, so a click on a
  *   video that is not on a <button> opens the dock instead of X's own handler.
@@ -25,7 +27,16 @@
     column: '[data-testid="primaryColumn"]',
   };
 
+  const KEY = "xvd-width"; // user-dragged dock width; absent = fill the space right of the timeline
   let dock = null; // { root, video, src, player, wasMuted, timer }
+
+  function savedWidth() {
+    try { return Number(localStorage.getItem(KEY)) || 0; } catch (e) { return 0; }
+  }
+
+  function saveWidth(w) {
+    try { if (w) localStorage.setItem(KEY, String(w)); else localStorage.removeItem(KEY); } catch (e) {}
+  }
 
   function colRight() {
     const col = document.querySelector(SEL.column);
@@ -34,7 +45,7 @@
 
   function place() {
     if (!dock) return;
-    const r = dockRect(colRight(), innerWidth, innerHeight);
+    const r = dockRect(colRight(), innerWidth, innerHeight, dock.userW);
     Object.assign(dock.root.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
     const v = dock.src;
     const f = fitContain(r.width - 24, r.height - 48 - 64 - 12, v.videoWidth, v.videoHeight);
@@ -78,10 +89,29 @@
     const time = el("span", "xvd-time", "0:00");
     ctl.append(pp, seek, time);
 
-    root.append(bar, video, ctl);
+    // Drag the left edge to resize; double-click it to fill the free space again.
+    const grip = el("div", "xvd-grip");
+    grip.title = "Drag to resize, double-click to reset";
+    grip.addEventListener("pointerdown", function (e) {
+      grip.setPointerCapture(e.pointerId);
+      e.preventDefault();
+    });
+    grip.addEventListener("pointermove", function (e) {
+      if (!grip.hasPointerCapture(e.pointerId)) return;
+      dock.userW = clampDockWidth(innerWidth - e.clientX, innerWidth);
+      place();
+    });
+    grip.addEventListener("pointerup", function () { saveWidth(dock.userW); });
+    grip.addEventListener("dblclick", function () {
+      dock.userW = 0;
+      saveWidth(0);
+      place();
+    });
+
+    root.append(grip, bar, video, ctl);
     document.body.append(root);
 
-    dock = { root, video, src, player, wasMuted: src.muted, timer: 0 };
+    dock = { root, video, src, player, userW: savedWidth(), wasMuted: src.muted, timer: 0 };
     document.documentElement.classList.add("xvd-open"); // moves the timeline aside, see styles.css
     if (player) player.classList.add("xvd-src"); // hides the original
     src.muted = true;
@@ -130,5 +160,6 @@
   }, true);
 
   addEventListener("resize", place);
-  addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
+  // Capture phase, so Esc closes the dock even when X's own handlers use the key.
+  addEventListener("keydown", function (e) { if (e.key === "Escape") close(); }, true);
 })();

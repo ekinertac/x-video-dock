@@ -7,11 +7,19 @@
  * functions are globals, with a CommonJS export guarded for the tests.
  */
 
-/** Rectangle of the dock: from the right edge of X's timeline column to the window edge. */
-function dockRect(colRight, winW, winH, minW) {
-  minW = minW || 420;
+/** A user-dragged dock width, kept between 320 px and the window minus 300 px (room for the nav). */
+function clampDockWidth(w, winW) {
+  return Math.min(Math.max(Math.round(w), 320), Math.max(winW - 300, 320));
+}
+
+/**
+ * Rectangle of the dock, anchored to the right window edge. Without a user width it spans
+ * from the right edge of X's timeline column to the window edge.
+ */
+function dockRect(colRight, winW, winH, userW) {
   // Narrow windows: cover the right end of the column instead of shrinking the video.
-  const width = Math.max(winW - Math.round(colRight), minW);
+  const auto = Math.max(winW - Math.round(colRight), 420);
+  const width = userW ? clampDockWidth(userW, winW) : auto;
   return { left: winW - width, top: 0, width: width, height: winH };
 }
 
@@ -29,4 +37,4 @@ function fmtTime(sec) {
   return Math.floor(s / 60) + ":" + String(s % 60).padStart(2, "0");
 }
 
-if (typeof module !== "undefined") module.exports = { dockRect, fitContain, fmtTime };
+if (typeof module !== "undefined") module.exports = { dockRect, clampDockWidth, fitContain, fmtTime };
