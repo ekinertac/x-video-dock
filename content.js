@@ -17,6 +17,7 @@
  *   its video dies. The dock closes when that happens (the timer in open()).
  * - The dock width is resizable (drag its left edge). The width is kept in x.com's
  *   localStorage under "xvd-width" and survives page loads.
+ * - Closing: Esc, the Close button, or a click anywhere outside the dock.
  * - A captured stream cannot seek by itself, so the seek bar drives the original.
  * - The only control X draws on a feed video is the mute button, so a click on a
  *   video that is not on a <button> opens the dock instead of X's own handler.
@@ -170,13 +171,19 @@
   // Capture phase on document runs before X's React handlers, so stopPropagation wins.
   document.addEventListener("click", function (e) {
     if (!(e.target instanceof Element)) return;
+    if (dock && dock.root.contains(e.target)) return; // the dock's own controls
     const p = e.target.closest(SEL.player);
-    if (!p || e.target.closest("button")) return; // leave the mute button alone
-    const v = p.querySelector("video");
-    if (!v) return;
-    e.stopPropagation();
-    e.preventDefault();
-    open(v);
+    if (p && e.target.closest("button")) return; // leave the mute button alone
+    const v = p && p.querySelector("video");
+    if (v) {
+      e.stopPropagation();
+      e.preventDefault();
+      open(v); // also switches the dock to this video
+      return;
+    }
+    // Any other click on the page closes the dock. The click itself goes on to X
+    // (open a post, follow a link), so closing never costs the user a second click.
+    close(false);
   }, true);
 
   addEventListener("resize", place);
