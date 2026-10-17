@@ -17,6 +17,8 @@
  *   its video dies. The dock closes when that happens (the timer in open()).
  * - The dock width is resizable (drag its left edge). The width is kept in x.com's
  *   localStorage under "xvd-width" and survives page loads.
+ * - Autoplay is switched off for every video except the docked one: block-autoplay.js
+ *   (page world) blocks play() unless this script has set data-xvd-ok on the video.
  * - Closing: Esc, the Close button, or a click anywhere outside the dock. A scrim over the
  *   timeline takes those clicks, so they never reach X's posts underneath.
  * - A captured stream cannot seek by itself, so the seek bar drives the original.
@@ -61,14 +63,14 @@
   }
 
   function open(src) {
-    close(true); // switching videos: stop the old original, or it keeps playing in the feed
+    close(); // switching videos
     const player = src.closest(SEL.player);
     const root = el("div", "xvd-dock");
     const bar = el("div", "xvd-top");
     const title = el("span", "", "Docked video");
     const x = el("button", "xvd-x", "Close");
     x.type = "button";
-    x.addEventListener("click", function () { close(false); });
+    x.addEventListener("click", close);
     bar.append(title, x);
 
     const video = el("video", "xvd-video");
@@ -117,6 +119,7 @@
     document.body.append(scrim, root);
 
     dock = { root, scrim, video, src, player, userW: savedWidth(), wasMuted: src.muted, userPaused: false, timer: 0 };
+    src.setAttribute("data-xvd-ok", ""); // lets block-autoplay.js pass this video's play() calls
     document.documentElement.classList.add("xvd-open"); // moves the timeline aside, see styles.css
     if (player) player.classList.add("xvd-src"); // hides the original
     src.muted = true;
@@ -147,7 +150,7 @@
     src.addEventListener("loadedmetadata", place);
 
     dock.timer = setInterval(function () {
-      if (!src.isConnected) return close(true); // X removed the post (virtualised list)
+      if (!src.isConnected) return close(); // X removed the post (virtualised list)
       pp.textContent = src.paused ? "Play" : "Pause";
       if (src.duration) seek.value = (src.currentTime / src.duration) * 1000;
       time.textContent = fmtTime(src.currentTime) + " / " + fmtTime(src.duration);
@@ -157,16 +160,18 @@
   }
 
   /**
-   * stopSource: pause the original too. Used when switching videos and when X has removed the
-   * post, because a removed <video> keeps playing sound if nobody pauses it.
-   * Otherwise the original goes back to the feed as it was (sound state restored).
+   * The original is always paused: it must not keep playing in the feed, and a <video> that X
+   * removed keeps playing sound if nobody pauses it. Listeners come off first, so our own
+   * "replay on pause" handler does not undo this.
    */
-  function close(stopSource) {
+  function close() {
     if (!dock) return;
     clearInterval(dock.timer);
     dock.src.removeEventListener("pause", dock.onPause);
     dock.src.removeEventListener("volumechange", dock.onVolume);
-    if (stopSource) dock.src.pause(); else dock.src.muted = dock.wasMuted;
+    dock.src.pause();
+    dock.src.removeAttribute("data-xvd-ok"); // X's autoplay is blocked for it again
+    dock.src.muted = dock.wasMuted;
     if (dock.player) dock.player.classList.remove("xvd-src");
     dock.video.srcObject = null;
     dock.root.remove();
@@ -191,10 +196,10 @@
     }
     // Any other click on the page closes the dock. The click itself goes on to X
     // (open a post, follow a link), so closing never costs the user a second click.
-    close(false);
+    close();
   }, true);
 
   addEventListener("resize", place);
   // Capture phase, so Esc closes the dock even when X's own handlers use the key.
-  addEventListener("keydown", function (e) { if (e.key === "Escape") close(false); }, true);
+  addEventListener("keydown", function (e) { if (e.key === "Escape") close(); }, true);
 })();
