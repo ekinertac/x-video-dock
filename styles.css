@@ -5,6 +5,7 @@
   position: fixed; z-index: 2000; display: flex; flex-direction: column; align-items: center;
   background: #08090a; border-left: 1px solid #2f3336; color: #e7e9ea; font: 14px system-ui, sans-serif;
 }
+.xvd-scrim { position: fixed; top: 0; bottom: 0; z-index: 1999; background: rgba(0, 0, 0, .3); cursor: pointer; }
 .xvd-grip { position: absolute; left: -4px; top: 0; bottom: 0; width: 9px; cursor: ew-resize; z-index: 1; touch-action: none; }
 .xvd-grip:hover, .xvd-grip:active { background: #1d9bf0; opacity: .5; }
 .xvd-top { width: 100%; height: 48px; display: flex; align-items: center; justify-content: space-between; padding: 0 12px; }

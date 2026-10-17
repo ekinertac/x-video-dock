@@ -17,7 +17,8 @@
  *   its video dies. The dock closes when that happens (the timer in open()).
  * - The dock width is resizable (drag its left edge). The width is kept in x.com's
  *   localStorage under "xvd-width" and survives page loads.
- * - Closing: Esc, the Close button, or a click anywhere outside the dock.
+ * - Closing: Esc, the Close button, or a click anywhere outside the dock. A scrim over the
+ *   timeline takes those clicks, so they never reach X's posts underneath.
  * - A captured stream cannot seek by itself, so the seek bar drives the original.
  * - The only control X draws on a feed video is the mute button, so a click on a
  *   video that is not on a <button> opens the dock instead of X's own handler.
@@ -44,6 +45,7 @@
     // The timeline column gets an explicit width (styles.css reads this variable), so it
     // follows the dock instead of leaving a gap, and does not shrink-wrap on post pages.
     document.documentElement.style.setProperty("--xvd-main", r.mainW + "px");
+    Object.assign(dock.scrim.style, { left: NAV_W + "px", width: Math.max(r.left - NAV_W, 0) + "px" });
     Object.assign(dock.root.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
     const v = dock.src;
     const f = fitContain(r.width - 24, r.height - 48 - 64 - 12, v.videoWidth, v.videoHeight);
@@ -106,10 +108,15 @@
       place();
     });
 
-    root.append(grip, bar, video, ctl);
-    document.body.append(root);
+    // Covers the timeline so no click reaches X behind it. The click handler below closes the
+    // dock when it sees the scrim as the target, so the scrim needs no listener of its own.
+    const scrim = el("div", "xvd-scrim");
+    scrim.title = "Click to close the video";
 
-    dock = { root, video, src, player, userW: savedWidth(), wasMuted: src.muted, userPaused: false, timer: 0 };
+    root.append(grip, bar, video, ctl);
+    document.body.append(scrim, root);
+
+    dock = { root, scrim, video, src, player, userW: savedWidth(), wasMuted: src.muted, userPaused: false, timer: 0 };
     document.documentElement.classList.add("xvd-open"); // moves the timeline aside, see styles.css
     if (player) player.classList.add("xvd-src"); // hides the original
     src.muted = true;
@@ -163,6 +170,7 @@
     if (dock.player) dock.player.classList.remove("xvd-src");
     dock.video.srcObject = null;
     dock.root.remove();
+    dock.scrim.remove();
     document.documentElement.classList.remove("xvd-open");
     document.documentElement.style.removeProperty("--xvd-main");
     dock = null;
