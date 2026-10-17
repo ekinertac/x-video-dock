@@ -1,6 +1,7 @@
 /*
  * content.js: adds a "dock" button to every video on x.com. Clicking it plays
- * that video large in a panel on the right (over the sidebar), full window height.
+ * that video large in a panel on the right, full window height. While it is open the
+ * nav shrinks to icons and the timeline moves left (CSS, see styles.css).
  *
  * Where it fits: content script for x.com / twitter.com (see manifest.json).
  * Depends on: layout.js (dockRect, fitContain, fmtTime), styles.css.
@@ -76,6 +77,7 @@
     document.body.append(root);
 
     dock = { root, video, src, wasMuted: src.muted, timer: 0 };
+    document.documentElement.classList.add("xvd-open"); // moves the timeline aside, see styles.css
     src.muted = true;
     if (src.paused) src.play().catch(function () {});
 
@@ -104,6 +106,7 @@
     dock.src.muted = dock.wasMuted;
     dock.video.srcObject = null;
     dock.root.remove();
+    document.documentElement.classList.remove("xvd-open");
     dock = null;
   }
 

@@ -15,4 +15,28 @@
 .xvd-ctl { width: calc(100% - 24px); height: 64px; display: flex; align-items: center; gap: 14px; }
 .xvd-ctl button, .xvd-x { border: 1px solid #536471; border-radius: 16px; background: none; color: #e7e9ea; padding: 6px 14px; font: 600 13px system-ui, sans-serif; cursor: pointer; }
 .xvd-seek { flex: 1; min-width: 0; accent-color: #1d9bf0; }
+
+/*
+ * Layout shift while the dock is open (class set on <html> by content.js).
+ * X lays out header | main as flex siblings centred on the screen. Here the nav shrinks to
+ * icons, the sidebar hides and the timeline sits against the nav, so the dock gets the rest.
+ * The 275 px nav is three nested divs deep, hence the three width overrides.
+ * Verified on x.com 2026-10-17; these structural selectors are the fragile part.
+ */
+html.xvd-open header[role="banner"] { flex: 0 0 88px !important; min-width: 88px !important; width: 88px !important; }
+html.xvd-open header[role="banner"] > div,
+html.xvd-open header[role="banner"] > div > div,
+html.xvd-open header[role="banner"] > div > div > div { width: 88px !important; min-width: 0 !important; }
+html.xvd-open header[role="banner"] nav { width: auto !important; align-items: center; }
+html.xvd-open header[role="banner"] nav a { width: auto !important; flex-grow: 0 !important; }
+html.xvd-open header[role="banner"] nav a [dir="ltr"],
+html.xvd-open header[role="banner"] [data-testid="SideNav_NewTweet_Button"] [dir="ltr"],
+html.xvd-open [data-testid="SideNav_AccountSwitcher_Button"] > div:not(:first-child) { display: none !important; }
+html.xvd-open [data-testid="SideNav_NewTweet_Button"] { min-width: 0 !important; width: 52px !important; display: flex; align-items: center; justify-content: center; }
+html.xvd-open [data-testid="SideNav_NewTweet_Button"]::after { content: "+"; color: #0f1419; font: 600 30px/1 system-ui, sans-serif; }
+html.xvd-open [data-testid="sidebarColumn"] { display: none !important; }
+html.xvd-open main[role="main"] { flex-grow: 0 !important; width: auto !important; }
+html.xvd-open main[role="main"] > div,
+html.xvd-open main[role="main"] > div > div,
+html.xvd-open main[role="main"] > div > div > div { width: auto !important; flex-grow: 0 !important; }
 .xvd-time { font: 13px ui-monospace, Menlo, monospace; color: #8b98a5; min-width: 88px; text-align: right; }
