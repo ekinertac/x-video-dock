@@ -1,6 +1,6 @@
 # X Video Dock
 
-Chrome extension for x.com. Hover a video, click "Dock", and it plays large in a panel on the right at full window height, with no fullscreen. Single content script, no account, no telemetry.
+Chrome extension for x.com. Click a video and it plays large in a panel on the right at full window height, with no fullscreen. The nav shrinks and the original video is hidden while it plays. Esc closes it. Single content script, no account, no telemetry.
 
 ## Setup
 

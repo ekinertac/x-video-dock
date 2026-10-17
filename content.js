@@ -1,7 +1,7 @@
 /*
- * content.js: adds a "dock" button to every video on x.com. Clicking it plays
- * that video large in a panel on the right, full window height. While it is open the
- * nav shrinks to icons and the timeline moves left (CSS, see styles.css).
+ * content.js: click a video on x.com and it plays large in a panel on the right, full
+ * window height. While it is open the nav shrinks to icons, the timeline moves left
+ * (CSS, see styles.css) and the original video in the feed is hidden.
  *
  * Where it fits: content script for x.com / twitter.com (see manifest.json).
  * Depends on: layout.js (dockRect, fitContain, fmtTime), styles.css.
@@ -10,10 +10,14 @@
  * Non-obvious constraints (verified on x.com 2026-10-17):
  * - X plays video from a blob: MediaSource URL, which only one <video> can use.
  *   So the dock plays original.captureStream() in its own <video> and the
- *   original keeps playing underneath (muted while docked, to avoid echo).
+ *   original keeps playing underneath (muted and hidden while docked).
+ * - The original is hidden with visibility, not display: it keeps its size, so the
+ *   feed does not jump, and X still sees it on screen and does not pause it.
  * - X virtualises the timeline: a post far off screen is removed from the DOM and
- *   its video dies. The dock closes when that happens (watch() below).
+ *   its video dies. The dock closes when that happens (the timer in open()).
  * - A captured stream cannot seek by itself, so the seek bar drives the original.
+ * - The only control X draws on a feed video is the mute button, so a click on a
+ *   video that is not on a <button> opens the dock instead of X's own handler.
  */
 (function () {
   const SEL = {
@@ -21,7 +25,7 @@
     column: '[data-testid="primaryColumn"]',
   };
 
-  let dock = null; // { root, video, src, wasMuted, timer }
+  let dock = null; // { root, video, src, player, wasMuted, timer }
 
   function colRight() {
     const col = document.querySelector(SEL.column);
@@ -47,6 +51,7 @@
 
   function open(src) {
     close();
+    const player = src.closest(SEL.player);
     const root = el("div", "xvd-dock");
     const bar = el("div", "xvd-top");
     const title = el("span", "", "Docked video");
@@ -76,8 +81,9 @@
     root.append(bar, video, ctl);
     document.body.append(root);
 
-    dock = { root, video, src, wasMuted: src.muted, timer: 0 };
+    dock = { root, video, src, player, wasMuted: src.muted, timer: 0 };
     document.documentElement.classList.add("xvd-open"); // moves the timeline aside, see styles.css
+    if (player) player.classList.add("xvd-src"); // hides the original
     src.muted = true;
     if (src.paused) src.play().catch(function () {});
 
@@ -104,36 +110,25 @@
     if (!dock) return;
     clearInterval(dock.timer);
     dock.src.muted = dock.wasMuted;
+    if (dock.player) dock.player.classList.remove("xvd-src");
     dock.video.srcObject = null;
     dock.root.remove();
     document.documentElement.classList.remove("xvd-open");
     dock = null;
   }
 
-  function addButtons() {
-    document.querySelectorAll(SEL.player).forEach(function (p) {
-      if (p.querySelector(".xvd-btn")) return;
-      const b = el("button", "xvd-btn", "Dock");
-      b.type = "button";
-      b.title = "Play in the right dock";
-      b.addEventListener("click", function (e) {
-        e.stopPropagation();
-        e.preventDefault();
-        const v = p.querySelector("video");
-        if (v) open(v);
-      });
-      p.append(b);
-    });
-  }
-
-  let queued = false;
-  new MutationObserver(function () {
-    if (queued) return;
-    queued = true;
-    requestAnimationFrame(function () { queued = false; addButtons(); });
-  }).observe(document.body, { childList: true, subtree: true });
+  // Capture phase on document runs before X's React handlers, so stopPropagation wins.
+  document.addEventListener("click", function (e) {
+    if (!(e.target instanceof Element)) return;
+    const p = e.target.closest(SEL.player);
+    if (!p || e.target.closest("button")) return; // leave the mute button alone
+    const v = p.querySelector("video");
+    if (!v) return;
+    e.stopPropagation();
+    e.preventDefault();
+    open(v);
+  }, true);
 
   addEventListener("resize", place);
   addEventListener("keydown", function (e) { if (e.key === "Escape") close(); });
-  addButtons();
 })();
