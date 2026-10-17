@@ -58,14 +58,14 @@
   }
 
   function open(src) {
-    close();
+    close(true); // switching videos: stop the old original, or it keeps playing in the feed
     const player = src.closest(SEL.player);
     const root = el("div", "xvd-dock");
     const bar = el("div", "xvd-top");
     const title = el("span", "", "Docked video");
     const x = el("button", "xvd-x", "Close");
     x.type = "button";
-    x.addEventListener("click", close);
+    x.addEventListener("click", function () { close(false); });
     bar.append(title, x);
 
     const video = el("video", "xvd-video");
@@ -108,14 +108,29 @@
     root.append(grip, bar, video, ctl);
     document.body.append(root);
 
-    dock = { root, video, src, player, userW: savedWidth(), wasMuted: src.muted, timer: 0 };
+    dock = { root, video, src, player, userW: savedWidth(), wasMuted: src.muted, userPaused: false, timer: 0 };
     document.documentElement.classList.add("xvd-open"); // moves the timeline aside, see styles.css
     if (player) player.classList.add("xvd-src"); // hides the original
     src.muted = true;
     if (src.paused) src.play().catch(function () {});
 
+    // X pauses a video when its post scrolls out of view, and unmutes it when sound is
+    // switched on globally. The dock copy follows the original, so undo both while docked.
+    dock.onPause = function () {
+      if (!dock.userPaused && !src.ended && src.isConnected) src.play().catch(function () {});
+    };
+    dock.onVolume = function () { if (!src.muted) src.muted = true; };
+    src.addEventListener("pause", dock.onPause);
+    src.addEventListener("volumechange", dock.onVolume);
+
     pp.addEventListener("click", function () {
-      if (src.paused) src.play(); else src.pause();
+      if (src.paused) {
+        dock.userPaused = false;
+        src.play();
+      } else {
+        dock.userPaused = true;
+        src.pause();
+      }
     });
     video.addEventListener("click", function () { pp.click(); });
     seek.addEventListener("input", function () {
@@ -124,7 +139,7 @@
     src.addEventListener("loadedmetadata", place);
 
     dock.timer = setInterval(function () {
-      if (!src.isConnected) return close(); // X removed the post (virtualised list)
+      if (!src.isConnected) return close(true); // X removed the post (virtualised list)
       pp.textContent = src.paused ? "Play" : "Pause";
       if (src.duration) seek.value = (src.currentTime / src.duration) * 1000;
       time.textContent = fmtTime(src.currentTime) + " / " + fmtTime(src.duration);
@@ -133,10 +148,17 @@
     place();
   }
 
-  function close() {
+  /**
+   * stopSource: pause the original too. Used when switching videos and when X has removed the
+   * post, because a removed <video> keeps playing sound if nobody pauses it.
+   * Otherwise the original goes back to the feed as it was (sound state restored).
+   */
+  function close(stopSource) {
     if (!dock) return;
     clearInterval(dock.timer);
-    dock.src.muted = dock.wasMuted;
+    dock.src.removeEventListener("pause", dock.onPause);
+    dock.src.removeEventListener("volumechange", dock.onVolume);
+    if (stopSource) dock.src.pause(); else dock.src.muted = dock.wasMuted;
     if (dock.player) dock.player.classList.remove("xvd-src");
     dock.video.srcObject = null;
     dock.root.remove();
@@ -159,5 +181,5 @@
 
   addEventListener("resize", place);
   // Capture phase, so Esc closes the dock even when X's own handlers use the key.
-  addEventListener("keydown", function (e) { if (e.key === "Escape") close(); }, true);
+  addEventListener("keydown", function (e) { if (e.key === "Escape") close(false); }, true);
 })();
