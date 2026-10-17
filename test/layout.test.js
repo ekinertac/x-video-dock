@@ -3,25 +3,30 @@ const test = require("node:test");
 const assert = require("node:assert");
 const { dockRect, clampDockWidth, fitContain, fmtTime } = require("../layout.js");
 
-test("dockRect uses the user width, anchored to the right edge", () => {
-  assert.deepStrictEqual(dockRect(1293, 1930, 1370, 900), { left: 1030, top: 0, width: 900, height: 1370 });
+test("dockRect auto: dock takes the space right of nav + 600 px column", () => {
+  assert.deepStrictEqual(dockRect(1930, 1370), { left: 688, top: 0, width: 1242, height: 1370, mainW: 600 });
 });
 
-test("clampDockWidth keeps the dock between 320 px and window minus 300 px", () => {
+test("dockRect auto keeps a minimum dock width on narrow windows", () => {
+  const r = dockRect(1100, 800);
+  assert.strictEqual(r.width, 420);
+  assert.strictEqual(r.left, 680);
+  assert.strictEqual(r.mainW, 592); // the column shrinks instead of sitting under the dock
+});
+
+test("dockRect with a user width: the column fills the rest, no gap", () => {
+  const r = dockRect(1930, 1370, 1100);
+  assert.strictEqual(r.left, 830);
+  assert.strictEqual(r.width, 1100);
+  assert.strictEqual(r.mainW, 742); // 1930 - 88 - 1100
+  assert.strictEqual(r.left, 88 + r.mainW); // dock starts exactly where the column ends
+});
+
+test("clampDockWidth keeps 320 px for the dock and 320 px for the column", () => {
   assert.strictEqual(clampDockWidth(100, 1930), 320);
-  assert.strictEqual(clampDockWidth(1900, 1930), 1630);
+  assert.strictEqual(clampDockWidth(1900, 1930), 1522);
   assert.strictEqual(clampDockWidth(800.4, 1930), 800);
   assert.strictEqual(clampDockWidth(500, 500), 320);
-});
-
-test("dockRect spans from the column edge to the window edge", () => {
-  assert.deepStrictEqual(dockRect(1293, 1930, 1370), { left: 1293, top: 0, width: 637, height: 1370 });
-});
-
-test("dockRect keeps a minimum width on narrow windows", () => {
-  const r = dockRect(1100, 1300, 800);
-  assert.strictEqual(r.width, 420);
-  assert.strictEqual(r.left, 880);
 });
 
 test("fitContain: vertical video is limited by height", () => {

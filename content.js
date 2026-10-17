@@ -24,7 +24,6 @@
 (function () {
   const SEL = {
     player: '[data-testid="videoPlayer"]',
-    column: '[data-testid="primaryColumn"]',
   };
 
   const KEY = "xvd-width"; // user-dragged dock width; absent = fill the space right of the timeline
@@ -38,14 +37,12 @@
     try { if (w) localStorage.setItem(KEY, String(w)); else localStorage.removeItem(KEY); } catch (e) {}
   }
 
-  function colRight() {
-    const col = document.querySelector(SEL.column);
-    return col ? col.getBoundingClientRect().right : innerWidth * 0.6;
-  }
-
   function place() {
     if (!dock) return;
-    const r = dockRect(colRight(), innerWidth, innerHeight, dock.userW);
+    const r = dockRect(innerWidth, innerHeight, dock.userW);
+    // The timeline column gets an explicit width (styles.css reads this variable), so it
+    // follows the dock instead of leaving a gap, and does not shrink-wrap on post pages.
+    document.documentElement.style.setProperty("--xvd-main", r.mainW + "px");
     Object.assign(dock.root.style, { left: r.left + "px", top: r.top + "px", width: r.width + "px", height: r.height + "px" });
     const v = dock.src;
     const f = fitContain(r.width - 24, r.height - 48 - 64 - 12, v.videoWidth, v.videoHeight);
@@ -144,6 +141,7 @@
     dock.video.srcObject = null;
     dock.root.remove();
     document.documentElement.classList.remove("xvd-open");
+    document.documentElement.style.removeProperty("--xvd-main");
     dock = null;
   }
 

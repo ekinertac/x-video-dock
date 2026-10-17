@@ -32,6 +32,7 @@ html.xvd-open [data-testid="SideNav_AccountSwitcher_Button"] > div:not(:first-ch
 html.xvd-open [data-testid="SideNav_NewTweet_Button"] { min-width: 0 !important; width: 52px !important; display: flex; align-items: center; justify-content: center; }
 html.xvd-open [data-testid="SideNav_NewTweet_Button"]::after { content: "+"; color: #0f1419; font: 600 30px/1 system-ui, sans-serif; }
 html.xvd-open [data-testid="sidebarColumn"] { display: none !important; }
+html.xvd-open [data-testid="primaryColumn"] { width: var(--xvd-main, 600px) !important; max-width: none !important; flex: 0 0 auto !important; }
 html.xvd-open main[role="main"] { flex-grow: 0 !important; width: auto !important; }
 html.xvd-open main[role="main"] > div,
 html.xvd-open main[role="main"] > div > div,
